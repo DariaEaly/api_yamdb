@@ -1,12 +1,19 @@
+import os
 from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+from dotenv import load_dotenv
 
-SECRET_KEY = 'p&l%385148kslhtyn^##a1)ilz@4zqj=rq&agdol^##zgl9(vs'
+load_dotenv()
+
+SECRET_KEY = str(os.getenv('SECRET_KEY'))
+
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 DEBUG = True
 
 ALLOWED_HOSTS = ['*']
+
+AUTH_USER_MODEL = 'reviews.User'
 
 INSTALLED_APPS = [
     'api.apps.ApiConfig',
@@ -94,5 +101,3 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
     ],
 }
-
-AUTH_USER_MODEL = 'reviews.User'
