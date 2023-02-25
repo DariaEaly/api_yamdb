@@ -15,11 +15,12 @@ class TitleSerializer(serializers.ModelSerializer):
     category = serializers.SlugRelatedField(
         queryset=Category.objects.all(), slug_field='slug')
     genre = serializers.SlugRelatedField(
-        queryset=Genre.objects.all(), slug_field='slug')
+        queryset=Genre.objects.all(), slug_field='slug', many=True)
 
     class Meta:
         fields = '__all__'
         model = Title
+        read_only_fields = ('rating',)
 
     def validate_year(self, value):
         if value.year > datetime.date.today().year:
