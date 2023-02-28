@@ -1,5 +1,3 @@
-from django.core.exceptions import ValidationError
-from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from reviews.models import User
 import re
@@ -11,8 +9,6 @@ class UsersSerializer(serializers.ModelSerializer):
         fields = (
             'username', 'email', 'first_name',
             'last_name', 'bio', 'role')
-            
-
 
 
 class NotAdminSerializer(serializers.ModelSerializer):
@@ -22,6 +18,7 @@ class NotAdminSerializer(serializers.ModelSerializer):
             'username', 'email', 'first_name',
             'last_name', 'bio', 'role')
         read_only_fields = ('role',)
+
     def validate_username(self, value):
         reg = re.compile(r'^[\w.@+-]+')
         if not reg.match(value):
@@ -29,6 +26,7 @@ class NotAdminSerializer(serializers.ModelSerializer):
                 'Имя пользователя не совпадает с паттерном'
             )
         return value
+
 
 class GetTokenSerializer(serializers.ModelSerializer):
     username = serializers.CharField(
@@ -43,12 +41,13 @@ class GetTokenSerializer(serializers.ModelSerializer):
             'confirmation_code'
         )
 
+
 class SignUpSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
         fields = ('email', 'username')
-    
+
     def validate_username(self, value):
         reg = re.compile(r'^[\w.@+-]+')
         if value == 'me':

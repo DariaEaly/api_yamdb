@@ -16,7 +16,7 @@ class User(AbstractUser):
     username = models.CharField(
         max_length=30,
         unique=True,
-        blank=False, 
+        blank=False,
         null=False,
         verbose_name="Username"
     )
@@ -62,7 +62,7 @@ class User(AbstractUser):
 
     def __str__(self):
         return f'{self.first_name} ${self.last_name} ({self.username})'
-    
+
     @property
     def is_admin(self):
         return (self.role == Role.ADMIN
@@ -71,4 +71,3 @@ class User(AbstractUser):
     @property
     def is_moderator(self):
         return self.role == Role.MODERATOR
-

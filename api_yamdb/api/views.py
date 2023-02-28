@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework_simplejwt.tokens import RefreshToken
-from reviews.models import  User
+from reviews.models import User
 
 from .permissions import AdminOnly
 from .serializers import (GetTokenSerializer,
@@ -25,7 +25,6 @@ class UsersViewSet(viewsets.ModelViewSet):
     pagination_class = LimitOffsetPagination
     filter_backends = (SearchFilter, )
     http_method_names = ['get', 'patch', 'delete', 'post']
-
 
     @action(
         methods=['GET', 'PATCH'],
@@ -78,13 +77,18 @@ class APISignup(APIView):
 
     def post(self, request):
         serializer = SignUpSerializer(data=request.data)
-        is_valid =  serializer.is_valid()
+        is_valid = serializer.is_valid()
         if request.data.get('username') == 'me':
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                serializer.errors,
+                status=status.HTTP_400_BAD_REQUEST
+            )
         if User.objects.filter(username=request.data.get('username'),
                                email=request.data.get('email')).exists():
-            user = User.objects.get(username=request.data.get('username'),
-                               email=request.data.get('email'))
+            user = User.objects.get(
+                username=request.data.get('username'),
+                email=request.data.get('email')
+            )
             user.confirmation_code = generate_confirmation_code()
             user.save()
             return Response('Token refresh', status=status.HTTP_200_OK)
@@ -94,7 +98,8 @@ class APISignup(APIView):
             User.objects.create_user(email=email, username=username)
             confirmation_code = generate_confirmation_code()
             User.objects.filter(email=email).update(
-                confirmation_code = confirmation_code)
+                confirmation_code=confirmation_code
+            )
             send_confirmation_code(email, confirmation_code)
             return Response(
                 serializer.data,
