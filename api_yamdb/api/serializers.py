@@ -1,19 +1,10 @@
 from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
-from reviews.models import Review, Comment, Title
+from reviews.models import Review, Comment, Title, Category, Genre
 from rest_framework import serializers
 from rest_framework.relations import SlugRelatedField
 from django.db.models import Avg
-
-
-class TitleSerializer(serializers.ModelSerializer):
-
-    rating = serializers.SerializerMethodField(
-        required=False
-    )
-
-    def get_rating(self, obj):
-        return obj.reviews.all().aggregate(Avg('score'))['score__avg']
+from datetime import datetime
 
 
 class ReviewSerializer(serializers.ModelSerializer):
@@ -54,3 +45,40 @@ class CommentSerializer(serializers.ModelSerializer):
         fields = '__all__'
         model = Comment
         read_only_fields = ('author', 'review')
+
+
+class CategorySerializer(serializers.ModelSerializer):
+
+    class Meta:
+        fields = '__all__'
+        model = Category
+
+
+class TitleSerializer(serializers.ModelSerializer):
+    category = serializers.SlugRelatedField(
+        queryset=Category.objects.all(), slug_field='slug')
+    genre = serializers.SlugRelatedField(
+        queryset=Genre.objects.all(), slug_field='slug', many=True)
+    rating = serializers.SerializerMethodField(
+        required=False
+    )
+
+    def get_rating(self, obj):
+        return obj.reviews.all().aggregate(Avg('score'))['score__avg']
+    
+    class Meta:
+        fields = '__all__'
+        model = Title
+        read_only_fields = ('rating',)
+
+    def validate_year(self, value):
+        if value.year > datetime.date.today().year:
+            raise serializers.ValidationError('Проверьте год выпуска')
+        return value
+
+
+class GenreSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Genre
+        fields = '__all__'
