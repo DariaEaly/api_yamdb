@@ -12,13 +12,7 @@ class UsersSerializer(serializers.ModelSerializer):
             'username', 'email', 'first_name',
             'last_name', 'bio', 'role')
             
-    def validate_username(self, value):
-        reg = re.compile(r'^[\w.@+-]+')
-        if not reg.match(value):
-            raise serializers.ValidationError(
-                'Имя пользователя не совпадает с паттерном'
-            )
-        return value
+
 
 
 class NotAdminSerializer(serializers.ModelSerializer):
@@ -28,7 +22,13 @@ class NotAdminSerializer(serializers.ModelSerializer):
             'username', 'email', 'first_name',
             'last_name', 'bio', 'role')
         read_only_fields = ('role',)
-
+    def validate_username(self, value):
+        reg = re.compile(r'^[\w.@+-]+')
+        if not reg.match(value):
+            raise serializers.ValidationError(
+                'Имя пользователя не совпадает с паттерном'
+            )
+        return value
 
 class GetTokenSerializer(serializers.ModelSerializer):
     username = serializers.CharField(

@@ -1,15 +1,14 @@
-from django.core.mail import EmailMessage
-from rest_framework import permissions, status, viewsets
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
+from rest_framework.filters import SearchFilter
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.viewsets import ModelViewSet
+from rest_framework.pagination import LimitOffsetPagination
 from rest_framework_simplejwt.tokens import RefreshToken
 from reviews.models import  User
 
-from .permissions import (AdminModeratorAuthorPermission, AdminOnly,
-                          IsAdminUserOrReadOnly)
+from .permissions import AdminOnly
 from .serializers import (GetTokenSerializer,
                           NotAdminSerializer,
                           SignUpSerializer,
@@ -23,6 +22,10 @@ class UsersViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated, AdminOnly,)
     lookup_field = 'username'
     search_fields = ('username', )
+    pagination_class = LimitOffsetPagination
+    filter_backends = (SearchFilter, )
+    http_method_names = ['get', 'patch', 'delete', 'post']
+
 
     @action(
         methods=['GET', 'PATCH'],
@@ -49,14 +52,7 @@ class UsersViewSet(viewsets.ModelViewSet):
 
 
 class APIGetToken(APIView):
-    """
-    Получение JWT-токена в обмен на username и confirmation code.
-    Права доступа: Доступно без токена. Пример тела запроса:
-    {
-        "username": "string",
-        "confirmation_code": "string"
-    }
-    """
+    """Получаем токен"""
     def post(self, request):
         serializer = GetTokenSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -75,39 +71,6 @@ class APIGetToken(APIView):
             {'confirmation_code': 'Неверный код подтверждения!'},
             status=status.HTTP_400_BAD_REQUEST)
 
-
-# class APISignup(APIView):
-#     permission_classes = (permissions.AllowAny,)
-#     @staticmethod
-#     def send_email(data):
-#         email = EmailMessage(
-#             subject=data['email_subject'],
-#             body=data['email_body'],
-#             to=[data['to_email']]
-#         )
-#         email.send()
-
-#     def post(self, request):
-#         serializer = SignUpSerializer(data=request.data)
-#         serializer.is_valid()
-#         email = serializer.validated_data.get('email')
-#         username = serializer.validated_data.get('username')
-#         if serializer.is_valid():
-#             confirmation_code = generate_confirmation_code()
-#             # user = User.objects.filter(email=email, username=username).exists()
-#             user, created = User.objects.get_or_create(email=email)
-#             if created is False:
-#                 if user.username == username:
-#                     user.confirmation_code = confirmation_code
-#                     user.save()
-#                     return Response('Token refresh', status=status.HTTP_200_OK)
-#                 else:
-#                     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-#             return Response(
-#                 serializer.data,
-#                 status=status.HTTP_200_OK)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class APISignup(APIView):
     """Регистирирует пользователя и отправляет ему код подтверждения."""
