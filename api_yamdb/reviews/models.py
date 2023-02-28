@@ -17,7 +17,7 @@ class User(AbstractUser):
         max_length=30,
         unique=True,
         blank=False, 
-        null=False
+        null=False,
         verbose_name="Username"
     )
 
@@ -59,12 +59,6 @@ class User(AbstractUser):
     class Meta:
         verbose_name = "Пользователь"
         verbose_name_plural = "Пользователи"
-        constraints = [
-            models.UniqueConstraint(
-                fields=['username', 'email'],
-                name='unique_name'
-            ),
-        ]
 
     def __str__(self):
         return f'{self.first_name} ${self.last_name} ({self.username})'
