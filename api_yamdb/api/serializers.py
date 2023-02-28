@@ -9,7 +9,13 @@ class UsersSerializer(serializers.ModelSerializer):
         fields = (
             'username', 'email', 'first_name',
             'last_name', 'bio', 'role')
-
+    def validate_username(self, value):
+        reg = re.compile(r'^[\w.@+-]+')
+        if not reg.match(value):
+            raise serializers.ValidationError(
+                'Имя пользователя не совпадает с паттерном'
+            )
+        return value
 
 class NotAdminSerializer(serializers.ModelSerializer):
     class Meta:
