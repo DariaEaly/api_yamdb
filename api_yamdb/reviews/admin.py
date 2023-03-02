@@ -27,11 +27,13 @@ class GenreAdmin(admin.ModelAdmin):
 
 
 class TitleAdmin(admin.ModelAdmin):
-    list_display = ('pk', 'name', 'year', 'description', 'category', 'get_genre')
+    list_display = (
+        'pk', 'name', 'year', 'description', 'category', 'get_genre')
     search_fields = ('name', 'year', 'description', 'category', 'get_genre')
 
     def get_genre(self, obj):
         return "\n".join([p.genre for p in obj.genre.all()])
+
 
 admin.register(User)
 admin.site.register(Title, TitleAdmin)

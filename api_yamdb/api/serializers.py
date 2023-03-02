@@ -1,5 +1,5 @@
-import re
 import datetime
+import re
 
 from django.core.exceptions import ValidationError
 from django.db.models import Avg
@@ -15,6 +15,7 @@ class UsersSerializer(serializers.ModelSerializer):
         fields = (
             'username', 'email', 'first_name',
             'last_name', 'bio', 'role')
+
     def validate_username(self, value):
         reg = re.compile(r'^[\w.@+-]+')
         if not reg.match(value):
@@ -22,6 +23,7 @@ class UsersSerializer(serializers.ModelSerializer):
                 'Имя пользователя не совпадает с паттерном'
             )
         return value
+
 
 class NotAdminSerializer(serializers.ModelSerializer):
     class Meta:
@@ -122,6 +124,7 @@ class CategorySerializer(serializers.ModelSerializer):
         model = Category
         fields = ('name', 'slug')
 
+
 class GenreSerializer(serializers.ModelSerializer):
     class Meta:
         model = Genre
@@ -130,13 +133,14 @@ class GenreSerializer(serializers.ModelSerializer):
 
 class TitleReadSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
-    genre = GenreSerializer(read_only= True, many=True)
+    genre = GenreSerializer(read_only=True, many=True)
     rating = serializers.SerializerMethodField(
         required=False
     )
 
     def get_rating(self, obj):
-        return obj.reviews.all().aggregate(Avg('score'))['score__avg']    
+        return obj.reviews.all().aggregate(Avg('score'))['score__avg']
+
     class Meta:
         fields = '__all__'
         model = Title
@@ -153,7 +157,7 @@ class TitlePostSerializer(serializers.ModelSerializer):
 
     def get_rating(self, obj):
         return obj.reviews.all().aggregate(Avg('score'))['score__avg']
-    
+
     class Meta:
         fields = '__all__'
         model = Title
