@@ -10,6 +10,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from reviews.models import Category, Comment, Genre, Review, Title, User
 from django.urls import reverse
+from rest_framework import mixins
 
 from .permissions import (AdminOnly, IsAdminUserOrReadOnly,
                           IsAuthorAdminModeratorOrReadOnly)
@@ -18,7 +19,7 @@ from .serializers import (CategorySerializer, CommentSerializer,
                           NotAdminSerializer, ReviewSerializer,
                           SignUpSerializer, TitleReadSerializer, UsersSerializer, TitlePostSerializer)
 from .utils import generate_confirmation_code, send_confirmation_code
-
+from .mixins import GenreAndCategoriesMixinSet
 
 class UsersViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
@@ -111,7 +112,7 @@ class APISignup(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class CategoryViewSet(viewsets.ModelViewSet):
+class CategoryViewSet(GenreAndCategoriesMixinSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = (IsAdminUserOrReadOnly,)
@@ -119,9 +120,10 @@ class CategoryViewSet(viewsets.ModelViewSet):
     search_fields = ('name',)
     pagination_class = LimitOffsetPagination
     lookup_field='slug'
+    
 
 
-class GenreViewSet(viewsets.ModelViewSet):
+class GenreViewSet(GenreAndCategoriesMixinSet):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
     permission_classes = (IsAdminUserOrReadOnly,)
@@ -129,6 +131,7 @@ class GenreViewSet(viewsets.ModelViewSet):
     search_fields = ('name',)
     pagination_class = LimitOffsetPagination
     lookup_field='slug'
+
 
 
 class TitleViewSet(viewsets.ModelViewSet):
