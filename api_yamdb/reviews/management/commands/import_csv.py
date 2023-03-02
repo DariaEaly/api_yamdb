@@ -20,7 +20,7 @@ class Command(BaseCommand):
                     name = row['name']
                     slug = row['slug']
                     model(id=id, name=name, slug=slug).save()
-        
+
         with open('static/data/users.csv', encoding="utf-8") as csv_file:
             """Запись пользователей."""
             csv_reader = csv.DictReader(csv_file, delimiter=',')
@@ -39,7 +39,7 @@ class Command(BaseCommand):
                      bio=bio,
                      first_name=first_name,
                      last_name=last_name).save()
-        
+
         with open('static/data/titles.csv', encoding="utf-8") as csv_file:
             """Запись произведений."""
             csv_reader = csv.DictReader(csv_file, delimiter=',')
@@ -72,10 +72,9 @@ class Command(BaseCommand):
                 Review(id=id,
                        title_id=title_id,
                        text=text,
-                       author=author,
+                       author_id=author,
                        score=score,
                        pub_date=pub_date).save()
-
 
         with open('static/data/comments.csv', encoding="utf-8") as csv_file:
             """Запись комментариев."""
@@ -89,6 +88,5 @@ class Command(BaseCommand):
                 Comment(id=id,
                         review_id=review_id,
                         text=text,
-                        author=author,
-                        score=score,
+                        author_id=author,
                         pub_date=pub_date).save()
