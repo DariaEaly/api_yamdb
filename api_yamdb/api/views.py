@@ -1,27 +1,23 @@
-from rest_framework import status, viewsets, filters
+from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter
+from rest_framework.pagination import LimitOffsetPagination
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.pagination import LimitOffsetPagination
 from rest_framework_simplejwt.tokens import RefreshToken
-from django_filters.rest_framework import DjangoFilterBackend
-from django.shortcuts import get_object_or_404
-from .serializers import (GetTokenSerializer,
-                          NotAdminSerializer,
-                          SignUpSerializer,
-                          UsersSerializer,
-                          CommentSerializer,
-                          ReviewSerializer,
-                          CategorySerializer,
-                          GenreSerializer,
-                          TitleSerializer)
+from reviews.models import Category, Comment, Genre, Review, Title, User
+from django.urls import reverse
+
+from .permissions import (AdminOnly, IsAdminUserOrReadOnly,
+                          IsAuthorAdminModeratorOrReadOnly)
+from .serializers import (CategorySerializer, CommentSerializer,
+                          GenreSerializer, GetTokenSerializer,
+                          NotAdminSerializer, ReviewSerializer,
+                          SignUpSerializer, TitleReadSerializer, UsersSerializer, TitlePostSerializer)
 from .utils import generate_confirmation_code, send_confirmation_code
-
-from reviews.models import Review, Comment, Title, Category, Genre, User
-
-from .permissions import IsAuthorAdminModeratorOrReadOnly, IsAdminOrReadOnly, IsAuthenticated, AllowAny, AdminOnly
-from django_filters.rest_framework import DjangoFilterBackend
 
 
 class UsersViewSet(viewsets.ModelViewSet):
@@ -118,30 +114,49 @@ class APISignup(APIView):
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = (IsAdminOrReadOnly,)
+    permission_classes = (IsAdminUserOrReadOnly,)
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
-
-
-class TitleViewSet(viewsets.ModelViewSet):
-    queryset = Title.objects.all()
-    serializer_class = TitleSerializer
-    permission_classes = (IsAdminOrReadOnly,)
-    filter_backends = (DjangoFilterBackend,)
-    filterset_fields = ('category', 'name', 'genre', 'year')
+    pagination_class = LimitOffsetPagination
+    lookup_field='slug'
 
 
 class GenreViewSet(viewsets.ModelViewSet):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
-    permission_classes = (IsAdminOrReadOnly,)
+    permission_classes = (IsAdminUserOrReadOnly,)
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
+    pagination_class = LimitOffsetPagination
+    lookup_field='slug'
+
+
+class TitleViewSet(viewsets.ModelViewSet):
+    permission_classes = (IsAdminUserOrReadOnly,)
+    filter_backends = (DjangoFilterBackend,)
+    filterset_fields = ('category__slug', 'name', 'year')
+    pagination_class = LimitOffsetPagination
+
+    def get_queryset(self):
+        queryset = Title.objects.all()
+        genre = self.request.query_params.get('genre')
+        category = self.request.query_params.get('category')
+        if genre is not None:
+            queryset = queryset.filter(genre__slug=genre)
+        if category is not None:
+            queryset = queryset.filter(category__slug=category)
+        return queryset
+    
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return  TitleReadSerializer
+        return TitlePostSerializer
 
 
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
     permission_classes = (IsAuthorAdminModeratorOrReadOnly,)
+    pagination_class = LimitOffsetPagination
 
     def get_queryset(self):
 
@@ -162,7 +177,8 @@ class CommentViewSet(viewsets.ModelViewSet):
 class ReviewViewSet(viewsets.ModelViewSet):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
-    permission_classes = [IsAuthorAdminModeratorOrReadOnly]
+    permission_classes = (IsAuthorAdminModeratorOrReadOnly,)
+    pagination_class = LimitOffsetPagination
 
     def get_queryset(self):
         title_id = self.kwargs.get("title_id")

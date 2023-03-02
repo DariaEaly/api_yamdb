@@ -65,14 +65,14 @@
 
     ```bash
     curl -X POST -H "Content-Type: application/json" -d '{"username": "MyUsername",
-    "password": "MySecretPsW:)"}' "http://127.0.0.1:8000/api/v1/auth/users/"
+    "email ": "user@example.com"}' "http://127.0.0.1:8000/api/v1/auth/signup/"
     ```
 
-- Получите токен
+- Получите токен, указав код подтверждения, который был отправлен на указанный вами email
 
     ```bash
     curl -X POST -H "Content-Type: application/json" -d '{"username": "username",
-    "password": "MySecretPsW:)"}' "http://127.0.0.1:8000/api/v1/jwt/create"
+    "confirmation_code": "123456"}' "http://127.0.0.1:8000/api/v1/auth/token/"
     ```
 
 - Получите список всех произведений:

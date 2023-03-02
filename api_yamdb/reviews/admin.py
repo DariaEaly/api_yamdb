@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import User, Category, Genre, Title
+
+from .models import Category, Genre, Title, User
 
 
 class UserAdmin(admin.ModelAdmin):
@@ -26,8 +27,8 @@ class GenreAdmin(admin.ModelAdmin):
 
 
 class TitleAdmin(admin.ModelAdmin):
-    list_display = ('pk', 'name', 'year', 'description', 'category')
-    search_fields = ('name', 'year', 'description', 'category',)
+    list_display = ('pk', 'name', 'year', 'description', 'category', 'get_genre')
+    search_fields = ('name', 'year', 'description', 'category', 'get_genre')
 
     def get_genre(self, obj):
         return "\n".join([p.genre for p in obj.genre.all()])

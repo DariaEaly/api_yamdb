@@ -1,11 +1,13 @@
-from rest_framework import serializers
 import re
+import datetime
+
 from django.core.exceptions import ValidationError
-from django.shortcuts import get_object_or_404
-from reviews.models import User, Review, Comment, Title, Category, Genre
-from rest_framework.relations import SlugRelatedField
 from django.db.models import Avg
-from datetime import datetime
+from django.shortcuts import get_object_or_404
+from rest_framework import serializers
+from rest_framework.relations import SlugRelatedField
+from reviews.models import Category, Comment, Genre, Review, Title, User
+
 
 class UsersSerializer(serializers.ModelSerializer):
     class Meta:
@@ -116,13 +118,31 @@ class CommentSerializer(serializers.ModelSerializer):
 
 
 class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ('name', 'slug')
 
+class GenreSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Genre
+        fields = ('name', 'slug')
+
+
+class TitleReadSerializer(serializers.ModelSerializer):
+    category = CategorySerializer(read_only=True)
+    genre = GenreSerializer(read_only= True, many=True)
+    rating = serializers.SerializerMethodField(
+        required=False
+    )
+
+    def get_rating(self, obj):
+        return obj.reviews.all().aggregate(Avg('score'))['score__avg']    
     class Meta:
         fields = '__all__'
-        model = Category
+        model = Title
 
 
-class TitleSerializer(serializers.ModelSerializer):
+class TitlePostSerializer(serializers.ModelSerializer):
     category = serializers.SlugRelatedField(
         queryset=Category.objects.all(), slug_field='slug')
     genre = serializers.SlugRelatedField(
@@ -140,13 +160,6 @@ class TitleSerializer(serializers.ModelSerializer):
         read_only_fields = ('rating',)
 
     def validate_year(self, value):
-        if value.year > datetime.date.today().year:
+        if value > datetime.date.today().year:
             raise serializers.ValidationError('Проверьте год выпуска')
         return value
-
-
-class GenreSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = Genre
-        fields = '__all__'

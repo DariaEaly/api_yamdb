@@ -20,7 +20,26 @@ class Command(BaseCommand):
                     name = row['name']
                     slug = row['slug']
                     model(id=id, name=name, slug=slug).save()
-
+        
+        with open('static/data/users.csv', encoding="utf-8") as csv_file:
+            """Запись пользователей."""
+            csv_reader = csv.DictReader(csv_file, delimiter=',')
+            for row in csv_reader:
+                id = row['id']
+                username = row['username']
+                email = row['email']
+                role = row['role']
+                bio = row['bio']
+                first_name = row['first_name']
+                last_name = row['last_name']
+                User(id=id,
+                     username=username,
+                     email=email,
+                     role=role,
+                     bio=bio,
+                     first_name=first_name,
+                     last_name=last_name).save()
+        
         with open('static/data/titles.csv', encoding="utf-8") as csv_file:
             """Запись произведений."""
             csv_reader = csv.DictReader(csv_file, delimiter=',')
@@ -57,24 +76,6 @@ class Command(BaseCommand):
                        score=score,
                        pub_date=pub_date).save()
 
-        with open('static/data/users.csv', encoding="utf-8") as csv_file:
-            """Запись пользователей."""
-            csv_reader = csv.DictReader(csv_file, delimiter=',')
-            for row in csv_reader:
-                id = row['id']
-                username = row['username']
-                email = row['email']
-                role = row['role']
-                bio = row['bio']
-                first_name = row['first_name']
-                last_name = row['last_name']
-                User(id=id,
-                     username=username,
-                     email=email,
-                     role=role,
-                     bio=bio,
-                     first_name=first_name,
-                     last_name=last_name).save()
 
         with open('static/data/comments.csv', encoding="utf-8") as csv_file:
             """Запись комментариев."""

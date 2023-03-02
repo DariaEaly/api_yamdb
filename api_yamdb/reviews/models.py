@@ -1,7 +1,6 @@
-from django.db import models
-
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import MaxValueValidator, MinValueValidator
+from django.db import models
 from django.db.models import UniqueConstraint
 
 
@@ -78,6 +77,9 @@ class Category(models.Model):
     name = models.CharField('Название категории', max_length=256)
     slug = models.SlugField('URL категории', max_length=50, unique=True)
 
+    class Meta:
+        ordering = ('-name',)
+
     def __str__(self):
         return self.name
 
@@ -85,6 +87,9 @@ class Category(models.Model):
 class Genre(models.Model):
     name = models.CharField('Название жанра', max_length=256)
     slug = models.SlugField('URL жанра', max_length=50, unique=True)
+
+    class Meta:
+        ordering = ('-name',)
 
     def __str__(self):
         return self.name
