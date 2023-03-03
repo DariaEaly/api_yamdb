@@ -32,7 +32,7 @@ class TitleAdmin(admin.ModelAdmin):
     search_fields = ('name', 'year', 'description', 'category', 'get_genre')
 
     def get_genre(self, obj):
-        return "\n".join([p.genre for p in obj.genre.all()])
+        return '\n'.join([p.genre for p in obj.genre.all()])
 
 
 admin.register(User)
