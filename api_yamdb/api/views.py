@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from reviews.models import Category, Comment, Genre, Review, Title, User
+from django.db.models import Avg
 
 from .mixins import GenreAndCategoriesMixinSet
 from .permissions import (AdminOnly, IsAdminUserOrReadOnly,
@@ -56,7 +57,7 @@ class UsersViewSet(viewsets.ModelViewSet):
 
 
 class APIGetToken(APIView):
-    """Получаем токен"""
+    """Получаем токен."""
     def post(self, request):
         serializer = GetTokenSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -137,6 +138,7 @@ class TitleViewSet(viewsets.ModelViewSet):
     filter_backends = (DjangoFilterBackend,)
     filterset_fields = ('category__slug', 'name', 'year')
     pagination_class = LimitOffsetPagination
+    queryset = Title.objects.all().annotate(rating_avg=Avg('rating'))
 
     def get_queryset(self):
         queryset = Title.objects.all()
@@ -179,7 +181,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
     pagination_class = LimitOffsetPagination
 
     def get_queryset(self):
-        title_id = self.kwargs.get("title_id")
+        title_id = self.kwargs.get('title_id')
         return Review.objects.filter(title=title_id)
 
     def perform_create(self, serializer):

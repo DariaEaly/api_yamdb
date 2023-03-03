@@ -25,21 +25,13 @@ class UsersSerializer(serializers.ModelSerializer):
         return value
 
 
-class NotAdminSerializer(serializers.ModelSerializer):
+class NotAdminSerializer(UsersSerializer):
     class Meta:
         model = User
         fields = (
             'username', 'email', 'first_name',
             'last_name', 'bio', 'role')
         read_only_fields = ('role',)
-
-    def validate_username(self, value):
-        reg = re.compile(r'^[\w.@+-]+')
-        if not reg.match(value):
-            raise serializers.ValidationError(
-                'Имя пользователя не совпадает с паттерном'
-            )
-        return value
 
 
 class GetTokenSerializer(serializers.ModelSerializer):
@@ -134,34 +126,20 @@ class GenreSerializer(serializers.ModelSerializer):
 class TitleReadSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
     genre = GenreSerializer(read_only=True, many=True)
-    rating = serializers.SerializerMethodField(
-        required=False
-    )
-
-    def get_rating(self, obj):
-        return obj.reviews.all().aggregate(Avg('score'))['score__avg']
-
+    
     class Meta:
         fields = '__all__'
         model = Title
-
 
 class TitlePostSerializer(serializers.ModelSerializer):
     category = serializers.SlugRelatedField(
         queryset=Category.objects.all(), slug_field='slug')
     genre = serializers.SlugRelatedField(
         queryset=Genre.objects.all(), slug_field='slug', many=True)
-    rating = serializers.SerializerMethodField(
-        required=False
-    )
-
-    def get_rating(self, obj):
-        return obj.reviews.all().aggregate(Avg('score'))['score__avg']
 
     class Meta:
         fields = '__all__'
         model = Title
-        read_only_fields = ('rating',)
 
     def validate_year(self, value):
         if value > datetime.date.today().year:
