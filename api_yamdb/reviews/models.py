@@ -18,26 +18,26 @@ class User(AbstractUser):
         unique=True,
         blank=False,
         null=False,
-        verbose_name="Username"
+        verbose_name='Username'
     )
 
     email = models.EmailField(
         max_length=254,
         unique=True,
         db_index=True,
-        verbose_name="Электронная почта"
+        verbose_name='Электронная почта'
     )
 
     first_name = models.CharField(
         blank=True,
         max_length=150,
-        verbose_name="Имя"
+        verbose_name='Имя'
     )
 
     last_name = models.CharField(
         blank=True,
         max_length=150,
-        verbose_name="Фамилия"
+        verbose_name='Фамилия'
     )
 
     confirmation_code = models.CharField(
@@ -46,19 +46,19 @@ class User(AbstractUser):
         null=True,
         editable=False,
         unique=True,
-        verbose_name="Код подтверждения",
+        verbose_name='Код подтверждения',
     )
-    bio = models.TextField(blank=True, verbose_name="О себе")
+    bio = models.TextField(blank=True, verbose_name='О себе')
     role = models.CharField(
         max_length=30,
         choices=Role.choices,
         default=Role.USER,
-        verbose_name="Роль",
+        verbose_name='Роль',
     )
 
     class Meta:
-        verbose_name = "Пользователь"
-        verbose_name_plural = "Пользователи"
+        verbose_name = 'Пользователь'
+        verbose_name_plural = 'Пользователи'
 
     def __str__(self):
         return f'{self.first_name} ${self.last_name} ({self.username})'
@@ -132,7 +132,7 @@ class Review(models.Model):
         verbose_name='Автор отзыва')
     title = models.ForeignKey(
         Title, on_delete=models.CASCADE,
-        related_name="reviews", blank=True, null=True,
+        related_name='reviews', blank=True, null=True,
         verbose_name='Произведение'
     )
     score = models.IntegerField(validators=(MinValueValidator(1),
