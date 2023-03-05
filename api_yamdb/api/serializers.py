@@ -77,11 +77,6 @@ class ReviewSerializer(serializers.ModelSerializer):
     )
     author = SlugRelatedField(slug_field='username', read_only=True)
 
-    def validate_score(self, value):
-        if 0 > value > 10:
-            raise serializers.ValidationError('Минимум 1, максимум 10.')
-        return value
-
     def validate(self, data):
         request = self.context['request']
         author = request.user
