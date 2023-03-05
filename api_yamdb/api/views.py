@@ -1,3 +1,4 @@
+from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, status, viewsets
@@ -9,7 +10,6 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from reviews.models import Category, Comment, Genre, Review, Title, User
-from django.db.models import Avg
 
 from .mixins import GenreAndCategoriesMixinSet
 from .permissions import (AdminOnly, IsAdminUserOrReadOnly,
@@ -138,10 +138,9 @@ class TitleViewSet(viewsets.ModelViewSet):
     filter_backends = (DjangoFilterBackend,)
     filterset_fields = ('category__slug', 'name', 'year')
     pagination_class = LimitOffsetPagination
-    queryset = Title.objects.all().annotate(rating_avg=Avg('rating'))
 
     def get_queryset(self):
-        queryset = Title.objects.all()
+        queryset = Title.objects.all().annotate(_rating=Avg('reviews__score'))
         genre = self.request.query_params.get('genre')
         category = self.request.query_params.get('category')
         if genre is not None:

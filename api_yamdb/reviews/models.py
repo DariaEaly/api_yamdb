@@ -1,7 +1,7 @@
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-from django.db.models import UniqueConstraint
+from django.db.models import Avg, UniqueConstraint
 
 
 class Role(models.TextChoices):
@@ -18,26 +18,26 @@ class User(AbstractUser):
         unique=True,
         blank=False,
         null=False,
-        verbose_name="Username"
+        verbose_name='Username'
     )
 
     email = models.EmailField(
         max_length=254,
         unique=True,
         db_index=True,
-        verbose_name="Электронная почта"
+        verbose_name='Электронная почта'
     )
 
     first_name = models.CharField(
         blank=True,
         max_length=150,
-        verbose_name="Имя"
+        verbose_name='Имя'
     )
 
     last_name = models.CharField(
         blank=True,
         max_length=150,
-        verbose_name="Фамилия"
+        verbose_name='Фамилия'
     )
 
     confirmation_code = models.CharField(
@@ -46,9 +46,9 @@ class User(AbstractUser):
         null=True,
         editable=False,
         unique=True,
-        verbose_name="Код подтверждения",
+        verbose_name='Код подтверждения',
     )
-    bio = models.TextField(blank=True, verbose_name="О себе")
+    bio = models.TextField(blank=True, verbose_name='О себе')
     role = models.CharField(
         max_length=30,
         choices=Role.choices,
@@ -57,10 +57,10 @@ class User(AbstractUser):
     )
 
     class Meta:
-        verbose_name = "Пользователь"
-        verbose_name_plural = "Пользователи"
+        verbose_name = 'Пользователь'
+        verbose_name_plural = 'Пользователи'
         ordering = ('username',)
-    
+
     def __str__(self):
         return f'{self.first_name} ${self.last_name} ({self.username})'
 
@@ -109,13 +109,18 @@ class Title(models.Model):
         null=True,
         on_delete=models.SET_NULL,
         related_name='titles')
-    rating = models.IntegerField('Рейтинг', blank=True, null=True)
 
     class Meta:
         ordering = ('name',)
 
     def __str__(self):
         return self.title
+
+    @property
+    def rating(self):
+        if hasattr(self, '_rating'):
+            return self._rating
+        return self.reviews.aggregate(Avg('score'))
 
 
 class TitleGenre(models.Model):
@@ -139,12 +144,12 @@ class Review(models.Model):
         verbose_name='Автор отзыва')
     title = models.ForeignKey(
         Title, on_delete=models.CASCADE,
-        related_name="reviews", blank=True, null=True,
+        related_name='reviews', blank=True, null=True,
         verbose_name='Произведение'
     )
     score = models.PositiveIntegerField(validators=(MinValueValidator(1),
-                                            MaxValueValidator(10)),
-                                verbose_name='Рейтинг произведения')
+                                                    MaxValueValidator(10)),
+                                        verbose_name='Рейтинг произведения')
 
     class Meta:
         constraints = [UniqueConstraint(fields=['author', 'title'],
@@ -153,6 +158,7 @@ class Review(models.Model):
 
     def __str__(self):
         return self.text
+
 
 class Comment(models.Model):
     author = models.ForeignKey(
@@ -164,9 +170,9 @@ class Comment(models.Model):
     text = models.TextField(verbose_name='Текст комментария')
     pub_date = models.DateTimeField(
         auto_now_add=True, db_index=True, verbose_name='Дата добавления')
-    
+
     class Meta:
         ordering = ('pub_date',)
 
     def __str__(self):
-        return self.text    
+        return self.text
