@@ -53,7 +53,7 @@ class User(AbstractUser):
         max_length=30,
         choices=Role.choices,
         default=Role.USER,
-        verbose_name="Роль",
+        verbose_name='Роль',
     )
 
     class Meta:
