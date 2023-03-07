@@ -2,7 +2,6 @@ import datetime
 import re
 
 from django.core.exceptions import ValidationError
-from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework.relations import SlugRelatedField
@@ -25,21 +24,13 @@ class UsersSerializer(serializers.ModelSerializer):
         return value
 
 
-class NotAdminSerializer(serializers.ModelSerializer):
+class NotAdminSerializer(UsersSerializer):
     class Meta:
         model = User
         fields = (
             'username', 'email', 'first_name',
             'last_name', 'bio', 'role')
         read_only_fields = ('role',)
-
-    def validate_username(self, value):
-        reg = re.compile(r'^[\w.@+-]+')
-        if not reg.match(value):
-            raise serializers.ValidationError(
-                'Имя пользователя не совпадает с паттерном'
-            )
-        return value
 
 
 class GetTokenSerializer(serializers.ModelSerializer):
@@ -86,11 +77,6 @@ class ReviewSerializer(serializers.ModelSerializer):
     )
     author = SlugRelatedField(slug_field='username', read_only=True)
 
-    def validate_score(self, value):
-        if 0 > value > 10:
-            raise serializers.ValidationError('Минимум 1, максимум 10.')
-        return value
-
     def validate(self, data):
         request = self.context['request']
         author = request.user
@@ -134,12 +120,7 @@ class GenreSerializer(serializers.ModelSerializer):
 class TitleReadSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
     genre = GenreSerializer(read_only=True, many=True)
-    rating = serializers.SerializerMethodField(
-        required=False
-    )
-
-    def get_rating(self, obj):
-        return obj.reviews.all().aggregate(Avg('score'))['score__avg']
+    rating = serializers.IntegerField()
 
     class Meta:
         fields = '__all__'
@@ -151,17 +132,10 @@ class TitlePostSerializer(serializers.ModelSerializer):
         queryset=Category.objects.all(), slug_field='slug')
     genre = serializers.SlugRelatedField(
         queryset=Genre.objects.all(), slug_field='slug', many=True)
-    rating = serializers.SerializerMethodField(
-        required=False
-    )
-
-    def get_rating(self, obj):
-        return obj.reviews.all().aggregate(Avg('score'))['score__avg']
 
     class Meta:
         fields = '__all__'
         model = Title
-        read_only_fields = ('rating',)
 
     def validate_year(self, value):
         if value > datetime.date.today().year:

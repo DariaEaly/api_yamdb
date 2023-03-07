@@ -1,7 +1,7 @@
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-from django.db.models import UniqueConstraint
+from django.db.models import Avg, UniqueConstraint
 
 
 class Role(models.TextChoices):
@@ -59,6 +59,7 @@ class User(AbstractUser):
     class Meta:
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
+        ordering = ('username',)
 
     def __str__(self):
         return f'{self.first_name} ${self.last_name} ({self.username})'
@@ -78,7 +79,7 @@ class Category(models.Model):
     slug = models.SlugField('URL категории', max_length=50, unique=True)
 
     class Meta:
-        ordering = ('-name',)
+        ordering = ('name',)
 
     def __str__(self):
         return self.name
@@ -89,7 +90,7 @@ class Genre(models.Model):
     slug = models.SlugField('URL жанра', max_length=50, unique=True)
 
     class Meta:
-        ordering = ('-name',)
+        ordering = ('name',)
 
     def __str__(self):
         return self.name
@@ -97,7 +98,7 @@ class Genre(models.Model):
 
 class Title(models.Model):
     name = models.CharField('Название произведения', max_length=200)
-    year = models.IntegerField('Год выпуска')
+    year = models.PositiveIntegerField('Год выпуска', db_index=True)
     description = models.TextField(
         'Описание произведения', blank=True, null=True)
     genre = models.ManyToManyField(
@@ -108,15 +109,26 @@ class Title(models.Model):
         null=True,
         on_delete=models.SET_NULL,
         related_name='titles')
-    rating = models.IntegerField('Рейтинг', blank=True, null=True)
+
+    class Meta:
+        ordering = ('name',)
 
     def __str__(self):
         return self.title
+
+    @property
+    def rating(self):
+        if hasattr(self, '_rating'):
+            return self._rating
+        return self.reviews.aggregate(Avg('score'))
 
 
 class TitleGenre(models.Model):
     title = models.ForeignKey(Title, on_delete=models.CASCADE)
     genre = models.ForeignKey(Genre, on_delete=models.CASCADE)
+
+    class Meta:
+        ordering = ('title',)
 
     def __str__(self):
         return f'{self.title} {self.genre}'
@@ -135,16 +147,17 @@ class Review(models.Model):
         related_name='reviews', blank=True, null=True,
         verbose_name='Произведение'
     )
-    score = models.IntegerField(validators=(MinValueValidator(1),
-                                            MaxValueValidator(10)),
-                                verbose_name='Рейтинг произведения')
-
-    def __str__(self):
-        return self.text
+    score = models.PositiveIntegerField(validators=(MinValueValidator(1),
+                                                    MaxValueValidator(10)),
+                                        verbose_name='Рейтинг произведения')
 
     class Meta:
         constraints = [UniqueConstraint(fields=['author', 'title'],
                        name='unique_rating')]
+        ordering = ('pub_date',)
+
+    def __str__(self):
+        return self.text
 
 
 class Comment(models.Model):
@@ -157,3 +170,9 @@ class Comment(models.Model):
     text = models.TextField(verbose_name='Текст комментария')
     pub_date = models.DateTimeField(
         auto_now_add=True, db_index=True, verbose_name='Дата добавления')
+
+    class Meta:
+        ordering = ('pub_date',)
+
+    def __str__(self):
+        return self.text

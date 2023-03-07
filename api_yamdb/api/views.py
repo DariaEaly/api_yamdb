@@ -1,3 +1,5 @@
+from django.contrib.auth.tokens import default_token_generator
+from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, status, viewsets
@@ -18,7 +20,7 @@ from .serializers import (CategorySerializer, CommentSerializer,
                           NotAdminSerializer, ReviewSerializer,
                           SignUpSerializer, TitlePostSerializer,
                           TitleReadSerializer, UsersSerializer)
-from .utils import generate_confirmation_code, send_confirmation_code
+from .utils import send_confirmation_code
 
 
 class UsersViewSet(viewsets.ModelViewSet):
@@ -56,7 +58,7 @@ class UsersViewSet(viewsets.ModelViewSet):
 
 
 class APIGetToken(APIView):
-    """Получаем токен"""
+    """Получаем токен."""
     def post(self, request):
         serializer = GetTokenSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -82,34 +84,32 @@ class APISignup(APIView):
 
     def post(self, request):
         serializer = SignUpSerializer(data=request.data)
-        is_valid = serializer.is_valid()
-        if request.data.get('username') == 'me':
-            return Response(
-                serializer.errors,
-                status=status.HTTP_400_BAD_REQUEST
-            )
         if User.objects.filter(username=request.data.get('username'),
                                email=request.data.get('email')).exists():
             user = User.objects.get(
                 username=request.data.get('username'),
                 email=request.data.get('email')
             )
-            user.confirmation_code = generate_confirmation_code()
+            user.confirmation_code = default_token_generator.make_token(user)
             user.save()
             return Response('Token refresh', status=status.HTTP_200_OK)
-        if is_valid:
-            email = request.data.get('email')
-            username = request.data.get('username')
-            User.objects.create_user(email=email, username=username)
-            confirmation_code = generate_confirmation_code()
-            User.objects.filter(email=email).update(
-                confirmation_code=confirmation_code
-            )
-            send_confirmation_code(email, confirmation_code)
+        serializer.is_valid(raise_exception=True)
+        if request.data.get('username') == 'me':
             return Response(
-                serializer.data,
-                status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                serializer.errors,
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        email = request.data.get('email')
+        username = request.data.get('username')
+        user = User.objects.create_user(email=email, username=username)
+        confirmation_code = default_token_generator.make_token(user)
+        User.objects.filter(email=email).update(
+            confirmation_code=confirmation_code
+        )
+        send_confirmation_code(email, confirmation_code)
+        return Response(
+            serializer.data,
+            status=status.HTTP_200_OK)
 
 
 class CategoryViewSet(GenreAndCategoriesMixinSet):
@@ -139,7 +139,7 @@ class TitleViewSet(viewsets.ModelViewSet):
     pagination_class = LimitOffsetPagination
 
     def get_queryset(self):
-        queryset = Title.objects.all()
+        queryset = Title.objects.all().annotate(_rating=Avg('reviews__score'))
         genre = self.request.query_params.get('genre')
         category = self.request.query_params.get('category')
         if genre is not None:
@@ -160,11 +160,14 @@ class CommentViewSet(viewsets.ModelViewSet):
     pagination_class = LimitOffsetPagination
 
     def get_queryset(self):
-        review_id = self.kwargs.get('review_id')
-        return Comment.objects.filter(review=review_id)
+        return Comment.objects.filter(
+            review_id=self.kwargs.get('review_id'),
+            review__title__id=self.kwargs.get('title_id'))
 
     def perform_create(self, serializer):
-        review = get_object_or_404(Review, pk=self.kwargs.get('review_id'))
+        review = get_object_or_404(Review,
+                                   id=self.kwargs.get('review_id'),
+                                   title__id=self.kwargs.get('title_id'))
         serializer.save(author=self.request.user, review=review)
 
     def perform_update(self, serializer):
@@ -179,7 +182,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
     pagination_class = LimitOffsetPagination
 
     def get_queryset(self):
-        title_id = self.kwargs.get("title_id")
+        title_id = self.kwargs.get('title_id')
         return Review.objects.filter(title=title_id)
 
     def perform_create(self, serializer):
