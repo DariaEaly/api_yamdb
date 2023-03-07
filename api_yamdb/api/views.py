@@ -1,3 +1,4 @@
+from django.contrib.auth.tokens import default_token_generator
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
@@ -19,7 +20,7 @@ from .serializers import (CategorySerializer, CommentSerializer,
                           NotAdminSerializer, ReviewSerializer,
                           SignUpSerializer, TitlePostSerializer,
                           TitleReadSerializer, UsersSerializer)
-from .utils import generate_confirmation_code, send_confirmation_code
+from .utils import send_confirmation_code
 
 
 class UsersViewSet(viewsets.ModelViewSet):
@@ -83,34 +84,32 @@ class APISignup(APIView):
 
     def post(self, request):
         serializer = SignUpSerializer(data=request.data)
-        is_valid = serializer.is_valid()
-        if request.data.get('username') == 'me':
-            return Response(
-                serializer.errors,
-                status=status.HTTP_400_BAD_REQUEST
-            )
         if User.objects.filter(username=request.data.get('username'),
                                email=request.data.get('email')).exists():
             user = User.objects.get(
                 username=request.data.get('username'),
                 email=request.data.get('email')
             )
-            user.confirmation_code = generate_confirmation_code()
+            user.confirmation_code = default_token_generator.make_token(user)
             user.save()
             return Response('Token refresh', status=status.HTTP_200_OK)
-        if is_valid:
-            email = request.data.get('email')
-            username = request.data.get('username')
-            User.objects.create_user(email=email, username=username)
-            confirmation_code = generate_confirmation_code()
-            User.objects.filter(email=email).update(
-                confirmation_code=confirmation_code
-            )
-            send_confirmation_code(email, confirmation_code)
+        serializer.is_valid(raise_exception=True)
+        if request.data.get('username') == 'me':
             return Response(
-                serializer.data,
-                status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                serializer.errors,
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        email = request.data.get('email')
+        username = request.data.get('username')
+        user = User.objects.create_user(email=email, username=username)
+        confirmation_code = default_token_generator.make_token(user)
+        User.objects.filter(email=email).update(
+            confirmation_code=confirmation_code
+        )
+        send_confirmation_code(email, confirmation_code)
+        return Response(
+            serializer.data,
+            status=status.HTTP_200_OK)
 
 
 class CategoryViewSet(GenreAndCategoriesMixinSet):
